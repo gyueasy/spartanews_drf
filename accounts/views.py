@@ -47,7 +47,7 @@ class SignupView(APIView):
         # 회원 탈퇴 처리
         try:
             user.delete()
-            return Response({'message': 'User account deleted successfully.'}, status=200)
+            return Response({'message': '유저 데이터가 삭제되었습니다.'}, status=200)
         except Exception as e:
             raise APIException(f"An error occurred: {str(e)}")
 
@@ -58,7 +58,7 @@ class SigninView(APIView):
         user=authenticate(username=username, password=password)
         
         if not user:
-            return Response({'error': 'no user data '}, status=400)
+            return Response({'error': '일치하는 사용자가 없습니다.'}, status=400)
 
         serializer=UserSerializer(user)
         res_data = serializer.data
@@ -81,12 +81,12 @@ class SignoutView(APIView):
         try:
             refresh_token_str = request.data.get('refresh_token')
             if not refresh_token_str:
-                return Response({'error': 'Refresh token is required'}, status=400)
+                return Response({'error': '리프레시토큰이 필요합니다.'}, status=400)
             
             refresh_token = RefreshToken(refresh_token_str)            
             refresh_token.blacklist()
             
-            return Response({'message': 'Successfully logged out'}, status=200)
+            return Response({'message': '로그아웃 완료'}, status=200)
         except TokenError as e:
             raise APIException(f"Token is invalid or expired: {e}")
         except Exception as e:
@@ -116,7 +116,7 @@ class ProfileImageView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Profile image updated successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': '프로필 이미지 변경이 완료되었습니다.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordView(APIView):
@@ -136,4 +136,4 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.save()
 
-        return Response({"message": "비밀번호가 성공적으로 변경되었습니다."}, status=status.HTTP_200_OK)
+        return Response({"message": "패스워드가 성공적으로 변경되었습니다."}, status=status.HTTP_200_OK)
