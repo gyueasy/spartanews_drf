@@ -11,6 +11,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.exceptions import APIException
 from rest_framework.decorators import permission_classes
 from rest_framework import status
+from django.shortcuts import get_object_or_404
+from articles.models import Article
 
 
 class SignupView(APIView):
@@ -118,6 +120,30 @@ class ProfileImageView(APIView):
             serializer.save()
             return Response({'message': '프로필 이미지 변경이 완료되었습니다.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BookmarkArticleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, article_id):
+        user = request.user
+        article = get_object_or_404(Article, id=article_id)
+        
+        if article in user.bookmarked_articles.all():
+            return Response({'error': '이미 즐겨찾기한 게시글입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.bookmarked_articles.add(article)
+        return Response({'message': '게시글이 즐겨찾기에 추가되었습니다.'}, status=status.HTTP_201_CREATED)
+    
+    def delete(self, request, article_id):
+        user = request.user
+        article = get_object_or_404(Article, id=article_id)
+        
+        if article not in user.bookmarked_articles.all():
+            return Response({'error': '즐겨찾기하지 않은 게시글입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.bookmarked_articles.remove(article)
+        return Response({'message': '게시글의 즐겨찾기가 취소되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
+
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
