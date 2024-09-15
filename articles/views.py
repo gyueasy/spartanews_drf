@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, generics
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     ArticleSerializer,
     ArticleDetailSerializer,
-    CommentSerializer
+    CommentSerializer,
 )
 from .models import Article, Like, Comment
 from .filters import ArticleFilter
@@ -38,6 +38,17 @@ class ArticleListAPIView(APIView):  # 클래스명 첫 글자를 대문자로 �
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class ArticleScoreListAPIView(generics.ListAPIView):
+    serializer_class = ArticleSerializer
+
+    def get_queryset(self):
+        queryset = Article.objects.all()
+        for article in queryset:
+            article.score = article.calculate_score()
+        # 점수 기준으로 내림차순 정렬
+        queryset = sorted(queryset, key=lambda x: x.score, reverse=True)
+        return queryset
 
 # ''' 게시글 상세 조회, 수정, 삭제 API '''
 class ArticleDetailAPIView(APIView):
@@ -111,13 +122,13 @@ class CommentDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # ''' 게시글 좋아요 기능 API '''
-class LikeArticleView(APIView):  # 클래스명 첫 글자를 대문자로 수정
+class LikeArticleView(APIView):
     permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
 
-    def post(self, request, articleId):
+    def post(self, request, article_id):
         ''' 게시글 좋아요 처리 '''
         user = request.user
-        article = get_object_or_404(Article, id=articleId)  # 'article'을 'Article'로 수정
+        article = get_object_or_404(Article, id=article_id)  # 'article'을 'Article'로 수정
 
         if Like.objects.filter(user=user, article=article).exists():
             return Response({'error': '이미 좋아요를 눌렀습니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -128,14 +139,10 @@ class LikeArticleView(APIView):  # 클래스명 첫 글자를 대문자로 수�
 
         return Response({'message': '게시글에 좋아요를 눌렀습니다.'}, status=status.HTTP_201_CREATED)
 
-# ''' 게시글 좋아요 취소 기능 API '''
-class UnlikeArticleView(APIView):  # 클래스명 첫 글자를 대문자로 수정
-    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
-
-    def delete(self, request, articleId):
+    def delete(self, request, article_id):
         ''' 게시글 좋아요 취소 처리 '''
         user = request.user
-        article = get_object_or_404(Article, id=articleId)  # 'article'을 'Article'로 수정
+        article = get_object_or_404(Article, id=article_id)  # 'article'을 'Article'로 수정
 
         like = Like.objects.filter(user=user, article=article).first()
         if not like:
