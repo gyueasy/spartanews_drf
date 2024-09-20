@@ -144,7 +144,6 @@ class BookmarkArticleView(APIView):
         user.bookmarked_articles.remove(article)
         return Response({'message': '게시글의 즐겨찾기가 취소되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
-
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
